@@ -5,4 +5,115 @@ Created on Tue May  5 16:49:20 2020
 @author: User
 """
 
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+#Part 1 - Data preprocessing
+
+dataset_train = pd.read_csv('Google_Stock_Price_Train.csv')
+training_set = dataset_train.iloc[:, 1:2].values
+
+# Feature Scaling
+from sklearn.preprocessing import MinMaxScaler
+sc = MinMaxScaler(feature_range = (0,1))
+training_set_scaled = sc.fit_transform(training_set)
+
+X_train = []
+y_train = []
+for i in range(60, len(training_set_scaled)):
+    X_train.append(training_set_scaled[i-60:i, 0])    
+    y_train.append(training_set_scaled[i, 0]) 
+
+X_train, y_train = np.array(X_train), np.array(y_train)
+
+# Reshaping
+X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+
+# Part 2 - Now let's make the ANN!
+# Importing the Keras libraries and packages
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.layers import LSTM
+
+regressor = Sequential()
+#first layer
+regressor.add(LSTM(units = 50, return_sequences = True, input_shape =(X_train.shape[1],1)))
+regressor.add(Dropout(0.2))
+#second layer
+regressor.add(LSTM(units = 50, return_sequences = True))
+regressor.add(Dropout(0.2))
+#third layer
+regressor.add(LSTM(units = 50, return_sequences = True))
+regressor.add(Dropout(0.2))
+#4-th layer
+regressor.add(LSTM(units = 50, return_sequences = False))
+regressor.add(Dropout(0.2))
+# output
+regressor.add(Dense(units = 1))
+#Compile
+regressor.compile(optimizer = 'adam',
+                  loss = 'mean_squared_error')
+# Fitting
+regressor.fit(X_train, y_train, epochs = 100, batch_size = 32)
+
+
+
+#Visualization and predict
+
+dataset_test = pd.read_csv('Google_Stock_Price_Test.csv')
+real_stock_price = dataset_test.iloc[:, 1:2].values
+
+dataset_total = pd.concat((dataset_train['Open'], dataset_test['Open']), axis = 0)
+inputs = dataset_total[len(dataset_total)-len(dataset_test)-60:].values
+inputs = inputs.reshape(-1,1)
+inputs = sc.transform(inputs)
+
+X_test = []
+for i in range(60, 80):
+    X_test.append(inputs[i-60:i, 0])    
+X_test = np.array(X_test)
+X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+
+predicted_stock_price = regressor.predict(X_test)
+predicted_stock_price = sc.inverse_transform(predicted_stock_price)
+
+plt.plot(real_stock_price, color = 'red', label = 'Real Google Stock Price')
+plt.plot(predicted_stock_price, color = 'blue', label = 'Predicted Google Stock Price')
+plt.title('Google Stock Price Prediction')
+plt.xlabel('Time')
+plt.ylabel('Price')
+plt.legend()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
