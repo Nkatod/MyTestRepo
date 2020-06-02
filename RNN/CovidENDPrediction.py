@@ -24,17 +24,17 @@ training_set_scaled = sc.fit_transform(training_set)
 
 X_train = []
 y_train = []
-RNNRange = 30
+RNNRange = 60
 for i in range(RNNRange, len(training_set_scaled)):
-    X_train.append(training_set_scaled[i-RNNRange:i, 0])    
-    y_train.append(training_set_scaled[i, 0]) 
+    X_train.append(training_set_scaled[i-RNNRange:i, 0])
+    y_train.append(training_set_scaled[i, 0])
 
 X_train, y_train = np.array(X_train), np.array(y_train)
 
 # Reshaping
 X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
 
-# Part 2 - Now let's make the ANN!
+# Part 2 - Now let's make the RNN!
 # Importing the Keras libraries and packages
 import keras
 from keras.models import Sequential
@@ -68,26 +68,30 @@ regressor.fit(X_train, y_train, epochs = 200, batch_size = 32)
 #Visualization and predict
 
 real_data = dataset_train.iloc[:, 3:4].values
-real_data = real_data[::-1] 
+real_data = real_data[::-1]
 
 
 inputs = real_data
 # inputs = inputs.reshape(-1,1)
 inputs = sc.transform(inputs)
 
-X_test = []
-for i in range(RNNRange, len(inputs)):
-    X_test.append(inputs[i-RNNRange:i, 0])    
-X_test = np.array(X_test)
-X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+for j in range(30):
+    X_test = []
+    for i in range(RNNRange, len(inputs)):
+        X_test.append(inputs[i-RNNRange:i, 0])
+    X_test = np.array(X_test)
+    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+    predicted_data = regressor.predict(X_test)
+    inputs = np.append(inputs, predicted_data[-1])
+    inputs = np.reshape(inputs, [len(inputs),1])
 
-predicted_data = regressor.predict(X_test)
+
 predicted_data = sc.inverse_transform(predicted_data)
 
 vis_predicted_data = []
 for i in range(0, RNNRange):
     vis_predicted_data.append(real_data[i, 0])
-    
+
 for i in range(len(predicted_data)):
     vis_predicted_data.append(predicted_data[i, 0])
 
